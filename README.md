@@ -20,6 +20,5 @@ EVA is a Python-based voice assistant that blends conversational AI, task automa
 ## 💡 How to Use It
 
 1. Clone the repository and create a virtual environment. Then install dependencies from requirements.txt.
-2. Add your API keys in a .env file (OpenAI, Hugging Face).
-3. Run the main Python script:  
-    **Main.py**                                                                     
+2. Add your API keys in a .env file (Groq, Cohere, Hugging Face).
+3. Run the main Python script: **Main.py**                                                                     
