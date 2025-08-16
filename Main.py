@@ -27,6 +27,7 @@ import subprocess
 import threading
 import json
 import os
+import sys
 
 env_vars = dotenv_values(".env")
 Username = env_vars.get("Username")
@@ -121,22 +122,59 @@ def MainExecution():
             break
 
     # Start image generation if any general query
+    ImageExecution = False
+    ImageGenerationQuery = None
+
+    # Possible prefixes the model might return
+    prefixes = [
+        "generate image of ",
+        "general generate image of ",
+        "generate image ",
+        "general generate image "
+    ]
+
     for queries in Decision:
-        if queries.startswith("general "):
-            ImageGenerationQuery = str(queries)
-            ImageExecution = True
+        print(f"[DEBUG] Checking query: '{queries}'")
+        q_lower = queries.lower().strip()
+        for p in prefixes:
+            if q_lower.startswith(p):
+                print(f"[DEBUG] Matched prefix: '{p}'")
+                ImageGenerationQuery = queries[len(p):].strip()
+                ImageExecution = True
+                break
+        if ImageExecution:
             break
 
-    if ImageExecution:
-        with open(r"Frontend\Files\ImageGeneration.data", "w") as file:
+    if ImageExecution and ImageGenerationQuery:
+        print(f"[DEBUG] Final image query: '{ImageGenerationQuery}'")
+
+        # Write to file
+        image_file_path = os.path.abspath(r"Frontend\Files\ImageGeneration.data")
+        os.makedirs(os.path.dirname(image_file_path), exist_ok=True)
+        with open(image_file_path, "w", encoding="utf-8") as file:
             file.write(f"{ImageGenerationQuery},True")
+
+        # Build full backend script path
+        backend_script = os.path.abspath(r"Backend\ImageGeneration.py")
+        SetAssistantStatus("Generating images...")
+        # Start backend using same Python interpreter
         try:
-            p1 = subprocess.Popen(['python', r"Backend\ImageGeneration.py"],
-                                  stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                  stdin=subprocess.PIPE, shell=False)
+            print("[DEBUG] Starting ImageGeneration.py...")
+            p1 = subprocess.Popen(
+                [sys.executable, backend_script],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                stdin=subprocess.PIPE,
+                shell=False
+            )
+            subprocess_list = []
             subprocess_list.append(p1)
+            print("[DEBUG] Backend started successfully")
         except Exception as e:
             print(f"Error starting ImageGeneration.py: {e}")
+    else:
+        print("[DEBUG] No matching prefix found — backend not started")
+
 
     # Realtime + General combined or only Realtime
     if (G and R) or R:
@@ -199,3 +237,4 @@ if __name__ == "__main__":
     thread2 = threading.Thread(target=FirstThread, daemon=True)
     thread2.start()
     SecondThread()
+
